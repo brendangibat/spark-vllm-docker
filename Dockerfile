@@ -45,7 +45,8 @@ RUN apt update && \
 
 # Additional deps
 RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-     uv pip install torch torchvision torchaudio triton --index-url https://download.pytorch.org/whl/nightly/cu132 && \
+     uv pip install --prerelease=allow torch --index-url https://download.pytorch.org/whl/nightly/cu132 && \
+     uv pip install --prerelease=allow torchvision torchaudio triton --index-url https://download.pytorch.org/whl/nightly/cu132 --extra-index-url https://download.pytorch.org/whl/nightly/cu130 && \
      uv pip install nvidia-nvshmem-cu13 "apache-tvm-ffi<0.2" filelock pynvml requests tqdm
 
 # Configure Ccache for CUDA/C++
@@ -256,7 +257,8 @@ ARG PRE_TRANSFORMERS=0
 
 # Install deps
 RUN --mount=type=cache,id=uv-cache,target=/root/.cache/uv \
-     uv pip install torch torchvision torchaudio triton --index-url https://download.pytorch.org/whl/nightly/cu132 && \
+     uv pip install --prerelease=allow torch --index-url https://download.pytorch.org/whl/nightly/cu132 && \
+     uv pip install --prerelease=allow torchvision torchaudio triton --index-url https://download.pytorch.org/whl/nightly/cu132 --extra-index-url https://download.pytorch.org/whl/nightly/cu130 && \
      uv pip install nvidia-nvshmem-cu13 "apache-tvm-ffi<0.2"
 
 # Install wheels from host ./wheels/ (bind-mounted from build context — no layer bloat)
