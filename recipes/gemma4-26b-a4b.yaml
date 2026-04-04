@@ -15,6 +15,9 @@ solo_only: false
 # Container image to use
 container: vllm-node-tf5
 
+build_args:
+  - --tf5
+
 # No mods required
 mods: []
 
