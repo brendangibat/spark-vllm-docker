@@ -18,8 +18,9 @@ container: vllm-node-tf5
 build_args:
   - --tf5
 
-# No mods required
-mods: []
+# Mods
+mods:
+  - mods/fix-gemma4-tool-parser
 
 # Default settings (can be overridden via CLI)
 defaults:
