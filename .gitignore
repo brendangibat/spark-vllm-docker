@@ -1,2 +1,6 @@
 .env
 build-metadata.yaml
+# session-local agent worktrees + loop/run artifacts (harness/agent-created; never commit)
+.claude/worktrees/
+outputs/
+results/
