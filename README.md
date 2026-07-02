@@ -75,7 +75,7 @@ An initial build speed depends on your Internet connection speed and whether the
   vllm serve \
     QuantTrio/Qwen3-VL-30B-A3B-Instruct-AWQ \
     --port 8000 --host 0.0.0.0 \
-    --gpu-memory-utilization 0.7 \
+    --gpu-memory-utilization 0.8 \
     --load-format fastsafetensors
 ```
 
@@ -105,13 +105,13 @@ To launch the model:
 ./launch-cluster.sh exec vllm serve \
   QuantTrio/MiniMax-M2-AWQ \
   --port 8000 --host 0.0.0.0 \
-  --gpu-memory-utilization 0.7 \
+  --gpu-memory-utilization 0.8 \
   -tp 2 \
   --distributed-executor-backend ray \
   --max-model-len 128000 \
   --load-format fastsafetensors \
   --enable-auto-tool-choice --tool-call-parser minimax_m2 \
-  --reasoning-parser minimax_m2_append_think
+  --reasoning-parser minimax_m2
 ```
 
 The launcher will use the number of nodes required by the parallelism flags. In a 2-node cluster, this command uses both nodes; in a larger configured cluster, extra nodes are not utilized.
