@@ -17,7 +17,14 @@ cluster_only: true
 # No mods required
 mods: []
 
-# Default settings (can be overridden via CLI where supported)
+# Default settings (can be overridden via CLI where supported).
+# OPERATIONAL LAUNCH (spin.zone spark3+spark4 pair, verified live 2026-07-09)
+# overrides some of these at launch — the running pair uses:
+#   --max-model-len 262144  --gpu-memory-utilization 0.78  --max-num-seqs 32
+#   --max-num-batched-tokens 8192  --kv-cache-dtype fp8  --block-size 256
+#   --enable-prefix-caching  (MTP num_speculative_tokens=2)
+# Launch cmd + defect ledger: claude-cluster-state/k8s/vllm-v4-flash-endpoint.yaml
+# Canonical topology: claude-local-swarm/docs/model-placement-strategy.md
 defaults:
   port: 8000
   host: 0.0.0.0
@@ -25,7 +32,7 @@ defaults:
   gpu_memory_utilization: 0.8
   max_model_len: 500000
   block_size: 256
-  max_num_seqs: 4
+  max_num_seqs: 32
   max_num_batched_tokens: 8192
   num_speculative_tokens: 2
 
