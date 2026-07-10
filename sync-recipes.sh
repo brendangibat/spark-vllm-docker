@@ -15,7 +15,8 @@
 #
 # Usage:
 #   ./sync-recipes.sh spark3 spark4            # DRY-RUN (shows exactly what would change)
-#   ./sync-recipes.sh --apply spark3 spark4    # actually sync
+#   ./sync-recipes.sh --apply spark3 spark4    # actually sync (additive, safe)
+#   ./sync-recipes.sh --apply --prune spark3   # sync AND delete on-node recipes not in git
 #   ./sync-recipes.sh --apply                  # autodiscover peers (COPY_HOSTS in .env)
 #
 # Safe to run while a model is serving: run-recipe.sh reads the recipe only at
@@ -26,11 +27,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEST="${SPARK_VLLM_DIR:-spark-vllm-docker}"   # relative to the remote $HOME
 SSH_USER="${SSH_USER:-$USER}"
 APPLY=false
+PRUNE=false
 HOSTS=()
 
 for a in "$@"; do
   case "$a" in
     --apply) APPLY=true ;;
+    --prune) PRUNE=true ;;
     -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
     -*) echo "unknown flag: $a" >&2; exit 2 ;;
     *) HOSTS+=("$a") ;;
@@ -56,17 +59,20 @@ if command -v git >/dev/null && git -C "$SCRIPT_DIR" rev-parse --git-dir >/dev/n
   fi
 fi
 
-# recipes/ is delivered with --delete so the node EXACTLY matches git (kills
-# stale node-only recipes). Launch scripts are copied without --delete.
+# Launch scripts are copied additively. recipes/ is ADDITIVE by default (safe);
+# pass --prune to add --delete so the node EXACTLY matches git (removes on-node
+# recipes not in git) — do that only after capturing wanted node variants into git.
 SCRIPTS=(run-recipe.py run-recipe.sh launch-cluster.sh autodiscover.sh)
 MODE=$([ "$APPLY" = true ] && echo APPLY || echo DRY-RUN)
 rc=0
 for h in "${HOSTS[@]}"; do
-  echo "=== ${h} (${MODE}) ==="
+  echo "=== ${h} (${MODE}$([ "$PRUNE" = true ] && echo ', PRUNE')) ==="
   common=(-az)
   [ "$APPLY" = true ] || common+=(--dry-run --itemize-changes)
+  recipe_opts=("${common[@]}")
+  [ "$PRUNE" = true ] && recipe_opts+=(--delete)
   ( cd "$SCRIPT_DIR" \
-      && rsync "${common[@]}" --delete recipes/ "${SSH_USER}@${h}:${DEST}/recipes/" \
+      && rsync "${recipe_opts[@]}" recipes/ "${SSH_USER}@${h}:${DEST}/recipes/" \
       && rsync "${common[@]}" "${SCRIPTS[@]}" "${SSH_USER}@${h}:${DEST}/" ) || rc=$?
 done
 

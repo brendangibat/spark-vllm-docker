@@ -23,13 +23,16 @@ git push
 From the checkout — dry-run first (shows the exact diff), then apply:
 
 ```bash
-./sync-recipes.sh spark3 spark4           # DRY-RUN
-./sync-recipes.sh --apply spark3 spark4   # push recipes/ + launch scripts
+./sync-recipes.sh spark3 spark4           # DRY-RUN (shows the diff)
+./sync-recipes.sh --apply spark3 spark4   # sync (additive: adds/updates, never deletes)
+./sync-recipes.sh --apply --prune spark3  # sync AND remove on-node recipes not in git
 ```
 
-`sync-recipes.sh` rsyncs `recipes/` (with `--delete`, so the node matches git
-exactly) plus the launch scripts (`run-recipe.*`, `launch-cluster.sh`,
-`autodiscover.sh`). It is **safe to run while a model is serving** — `run-recipe.sh`
+`sync-recipes.sh` rsyncs `recipes/` plus the launch scripts (`run-recipe.*`,
+`launch-cluster.sh`, `autodiscover.sh`). It is **additive by default** (adds and
+updates, never deletes); pass `--prune` to also delete on-node recipes not in git
+(node == git exactly) — do that only after capturing any wanted on-node variants
+into the repo. It is **safe to run while a model is serving** — `run-recipe.sh`
 reads the recipe only at (re)launch time, so the running container is untouched
 until you relaunch.
 

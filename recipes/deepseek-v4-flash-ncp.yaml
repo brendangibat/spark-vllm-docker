@@ -1,4 +1,9 @@
-# Recipe: DeepSeek V4 Flash
+# Recipe: DeepSeek V4 Flash — NO chunked prefill (2026-07-08 corruption bisect).
+# Long-prefix (~25K tok) requests nondeterministically return corrupt output
+# (system-prompt echoes / empty content, ~17-25%/req) on BOTH official FP8 and
+# DSpark, spec on/off, APC hit or miss — isolating the chunked sparse-MLA
+# SM120 prefill path. This variant disables chunked prefill. Also: streaming
+# loader (faster AND safe on fresh page cache).
 # DeepSeek V4 Flash with sparse MLA/DeepGEMM experimental SM120 support
 
 recipe_version: "1"
@@ -17,14 +22,7 @@ cluster_only: true
 # No mods required
 mods: []
 
-# Default settings (can be overridden via CLI where supported).
-# OPERATIONAL LAUNCH (spin.zone spark3+spark4 pair, verified live 2026-07-10)
-# overrides some of these at launch — the running pair uses:
-#   --max-model-len 262144  --gpu-memory-utilization 0.78  --max-num-seqs 32
-#   --max-num-batched-tokens 4096  --kv-cache-dtype fp8  --block-size 256
-#   --enable-prefix-caching  (MTP num_speculative_tokens=2)
-# Launch cmd + defect ledger: claude-cluster-state/k8s/vllm-v4-flash-endpoint.yaml
-# Canonical topology: claude-local-swarm/docs/model-placement-strategy.md
+# Default settings (can be overridden via CLI where supported)
 defaults:
   port: 8000
   host: 0.0.0.0
@@ -33,7 +31,7 @@ defaults:
   max_model_len: 500000
   block_size: 256
   max_num_seqs: 32
-  max_num_batched_tokens: 4096
+  max_num_batched_tokens: 262144
   num_speculative_tokens: 2
 
 # Environment variables
@@ -65,4 +63,5 @@ command: |
       --reasoning-config '{{"reasoning_parser":"deepseek_v4","reasoning_start_str":"","reasoning_end_str":""}}' \
       --default-chat-template-kwargs.thinking=true \
       --default-chat-template-kwargs.reasoning_effort=high \
-      --load-format instanttensor
+      --load-format auto \
+      --no-enable-chunked-prefill

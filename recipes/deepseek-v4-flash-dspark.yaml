@@ -1,12 +1,12 @@
-# Recipe: DeepSeek V4 Flash
+# Recipe: DeepSeek V4 Flash DSpark (mixed-precision requant, 2026-07-08 Item-B eval)
 # DeepSeek V4 Flash with sparse MLA/DeepGEMM experimental SM120 support
 
 recipe_version: "1"
-name: DeepSeek-V4-Flash
-description: vLLM serving deepseek-ai/DeepSeek-V4-Flash on a DGX Spark cluster
+name: DeepSeek-V4-Flash-DSpark
+description: vLLM serving deepseek-ai/DeepSeek-V4-Flash-DSpark on a DGX Spark cluster
 
 # HuggingFace model to download (optional, for --download-model)
-model: deepseek-ai/DeepSeek-V4-Flash
+model: deepseek-ai/DeepSeek-V4-Flash-DSpark
 
 # Container image to use
 container: vllm-node
@@ -14,17 +14,16 @@ container: vllm-node
 # Can only be run in a cluster
 cluster_only: true
 
+# DSpark eval 2026-07-08: load-format auto (streaming) NOT instanttensor —
+# SPECULATOR REMOVED for this eval: the dspark draft warmup crashes in
+# flashinfer _sparse_mla_sm120 (num_tokens=2 routed to the >64-token prefill
+# kernel — dispatch bug on this vLLM build). Measure DSpark without spec.
+# freshly-rsyncd weights leave the page cache full; instanttensor's pinned
+# io_uring buffers fight reclaim → 0 MemAvailable thrash (near-wedge observed).
 # No mods required
 mods: []
 
-# Default settings (can be overridden via CLI where supported).
-# OPERATIONAL LAUNCH (spin.zone spark3+spark4 pair, verified live 2026-07-10)
-# overrides some of these at launch — the running pair uses:
-#   --max-model-len 262144  --gpu-memory-utilization 0.78  --max-num-seqs 32
-#   --max-num-batched-tokens 4096  --kv-cache-dtype fp8  --block-size 256
-#   --enable-prefix-caching  (MTP num_speculative_tokens=2)
-# Launch cmd + defect ledger: claude-cluster-state/k8s/vllm-v4-flash-endpoint.yaml
-# Canonical topology: claude-local-swarm/docs/model-placement-strategy.md
+# Default settings (can be overridden via CLI where supported)
 defaults:
   port: 8000
   host: 0.0.0.0
@@ -33,7 +32,7 @@ defaults:
   max_model_len: 500000
   block_size: 256
   max_num_seqs: 32
-  max_num_batched_tokens: 4096
+  max_num_batched_tokens: 8192
   num_speculative_tokens: 2
 
 # Environment variables
@@ -44,7 +43,7 @@ env:
 
 # The vLLM serve command template
 command: |
-  vllm serve deepseek-ai/DeepSeek-V4-Flash \
+  vllm serve deepseek-ai/DeepSeek-V4-Flash-DSpark \
       --host {host} \
       --port {port} \
       --trust-remote-code \
@@ -56,7 +55,6 @@ command: |
       --max-num-batched-tokens {max_num_batched_tokens} \
       --gpu-memory-utilization {gpu_memory_utilization} \
       --enable-prefix-caching \
-      --speculative-config '{{"method":"mtp","num_speculative_tokens":{num_speculative_tokens}}}' \
       --tokenizer-mode deepseek_v4 \
       --distributed-executor-backend ray \
       --tool-call-parser deepseek_v4 \
@@ -65,4 +63,4 @@ command: |
       --reasoning-config '{{"reasoning_parser":"deepseek_v4","reasoning_start_str":"","reasoning_end_str":""}}' \
       --default-chat-template-kwargs.thinking=true \
       --default-chat-template-kwargs.reasoning_effort=high \
-      --load-format instanttensor
+      --load-format auto
