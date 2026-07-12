@@ -23,6 +23,10 @@ mods: []
 #   --max-model-len 262144  --gpu-memory-utilization 0.78  --max-num-seqs 32
 #   --max-num-batched-tokens 4096  --kv-cache-dtype fp8  --block-size 256
 #   --enable-prefix-caching  (MTP num_speculative_tokens=2)
+# 2026-07-12 (BB-375): recipe adds --enable-prompt-tokens-details — without it
+# vLLM omits usage.prompt_tokens_details, so downstream cache_hit_pct reads 0
+# even though the prefix cache hits ~86%. Takes effect on the NEXT pair
+# relaunch (the running pair predates the flag).
 # Launch cmd + defect ledger: claude-cluster-state/k8s/vllm-v4-flash-endpoint.yaml
 # Canonical topology: claude-local-swarm/docs/model-placement-strategy.md
 defaults:
@@ -56,6 +60,7 @@ command: |
       --max-num-batched-tokens {max_num_batched_tokens} \
       --gpu-memory-utilization {gpu_memory_utilization} \
       --enable-prefix-caching \
+      --enable-prompt-tokens-details \
       --speculative-config '{{"method":"mtp","num_speculative_tokens":{num_speculative_tokens}}}' \
       --tokenizer-mode deepseek_v4 \
       --distributed-executor-backend ray \
